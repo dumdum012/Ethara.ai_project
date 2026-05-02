@@ -1,0 +1,80 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+if (Astro.locals.user) {
+  return Astro.redirect('/dashboard');
+}
+---
+
+<Layout title="Team Task Manager - Login">
+  <div class="container" style="min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+    <h1 style="font-size: 4rem; text-align: center; margin-bottom: 2rem;">TEAM TASK<br/><span style="color: var(--accent-color);">MANAGER</span></h1>
+    
+    <div class="grid" style="width: 100%; max-width: 800px;">
+      <!-- Login Box -->
+      <div class="brut-box">
+        <h2>Login</h2>
+        <form id="login-form">
+          <input type="email" name="email" class="brut-input" placeholder="EMAIL" required />
+          <input type="password" name="password" class="brut-input" placeholder="PASSWORD" required />
+          <button type="submit" class="brut-btn" style="width: 100%">LOGIN_NOW</button>
+        </form>
+        <div id="login-error" style="color: red; margin-top: 1rem; font-weight: bold;"></div>
+      </div>
+
+      <!-- Register Box -->
+      <div class="brut-box" style="background: var(--accent-yellow);">
+        <h2>Register</h2>
+        <form id="register-form">
+          <input type="text" name="name" class="brut-input" placeholder="FULL NAME" required />
+          <input type="email" name="email" class="brut-input" placeholder="EMAIL" required />
+          <input type="password" name="password" class="brut-input" placeholder="PASSWORD" required />
+          <button type="submit" class="brut-btn secondary" style="width: 100%">JOIN_TEAM</button>
+        </form>
+        <div id="register-error" style="color: red; margin-top: 1rem; font-weight: bold;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('login-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target as HTMLFormElement);
+      const data = Object.fromEntries(fd.entries());
+      
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (res.ok) {
+        window.location.href = '/dashboard';
+      } else {
+        const error = await res.json();
+        const errDiv = document.getElementById('login-error');
+        if (errDiv) errDiv.textContent = error.error;
+      }
+    });
+
+    document.getElementById('register-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target as HTMLFormElement);
+      const data = Object.fromEntries(fd.entries());
+      
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (res.ok) {
+        window.location.href = '/dashboard';
+      } else {
+        const error = await res.json();
+        const errDiv = document.getElementById('register-error');
+        if (errDiv) errDiv.textContent = error.error;
+      }
+    });
+  </script>
+</Layout>

@@ -1,0 +1,149 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { prisma } from '../lib/prisma';
+
+const userLocals = Astro.locals.user;
+
+if (!userLocals) {
+  return Astro.redirect('/');
+}
+
+// Fetch tasks
+let tasks;
+if (userLocals.role === 'ADMIN') {
+  tasks = await prisma.task.findMany({ include: { project: true, assignee: true }, orderBy: { createdAt: 'desc' } });
+} else {
+  tasks = await prisma.task.findMany({
+    where: {
+      OR: [
+        { assigneeId: userLocals.id },
+        { project: { members: { some: { userId: userLocals.id } } } }
+      ]
+    },
+    include: { project: true, assignee: true },
+    orderBy: { createdAt: 'desc' }
+  });
+}
+
+// Fetch projects for task creation dropdown
+let projects;
+if (userLocals.role === 'ADMIN') {
+  projects = await prisma.project.findMany({ include: { members: { include: { user: true } } }});
+} else {
+  projects = await prisma.project.findMany({
+    where: { members: { some: { userId: userLocals.id } } },
+    include: { members: { include: { user: true } } }
+  });
+}
+
+const users = await prisma.user.findMany(); // To assign tasks
+---
+
+<Layout title="Dashboard - Team Task Manager">
+  <div class="container">
+    <div class="flex justify-between items-center mb-8">
+      <h1>Dashboard</h1>
+      <button id="logout-btn" class="brut-btn secondary">LOGOUT</button>
+    </div>
+
+    {userLocals.role === 'ADMIN' && (
+      <div class="mb-8">
+        <a href="/projects" class="brut-btn" style="background: var(--accent-blue);">MANAGE_PROJECTS</a>
+      </div>
+    )}
+
+    <div class="brut-box" style="background: var(--accent-yellow);">
+      <h2>CREATE_TASK</h2>
+      <form id="create-task-form" class="flex flex-col gap-4 mt-4">
+        <input type="text" name="title" class="brut-input" placeholder="TASK TITLE" required />
+        <input type="text" name="description" class="brut-input" placeholder="DESCRIPTION" />
+        <input type="date" name="dueDate" class="brut-input" />
+        
+        <select name="projectId" class="brut-input" required>
+          <option value="" disabled selected>SELECT PROJECT</option>
+          {projects.map(p => (
+            <option value={p.id}>{p.name}</option>
+          ))}
+        </select>
+
+        <select name="assigneeId" class="brut-input">
+          <option value="">ASSIGN TO (OPTIONAL)</option>
+          {users.map(u => (
+            <option value={u.id}>{u.name} ({u.role})</option>
+          ))}
+        </select>
+        
+        <button type="submit" class="brut-btn" style="background: var(--accent-color);">ADD_TASK</button>
+      </form>
+    </div>
+
+    <h2 class="mt-4 mb-4">YOUR_TASKS</h2>
+    <div class="grid">
+      {tasks.map(task => (
+        <div class="brut-box" style={task.status === 'COMPLETED' ? "opacity: 0.7; background: #e0e0e0;" : ""}>
+          <div class="flex justify-between items-center mb-4">
+            <span class={`badge status-${task.status}`}>{task.status}</span>
+            {task.dueDate && <span class="badge" style="background: #111; color: #fff;">{new Date(task.dueDate).toLocaleDateString()}</span>}
+          </div>
+          <h3>{task.title}</h3>
+          <p>{task.description}</p>
+          <div class="mt-4" style="font-size: 0.8rem; font-family: var(--font-mono);">
+            <p><strong>PROJECT:</strong> {task.project.name}</p>
+            <p><strong>ASSIGNEE:</strong> {task.assignee ? task.assignee.name : 'UNASSIGNED'}</p>
+          </div>
+          
+          <div class="mt-4 flex gap-4">
+            {task.status !== 'COMPLETED' && (
+              <button class="brut-btn update-status-btn" data-id={task.id} data-status="COMPLETED" style="padding: 0.5rem; font-size: 0.8rem; background: #00cc66;">DONE</button>
+            )}
+            {task.status === 'PENDING' && (
+              <button class="brut-btn update-status-btn secondary" data-id={task.id} data-status="IN_PROGRESS" style="padding: 0.5rem; font-size: 0.8rem;">START</button>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/';
+    });
+
+    document.getElementById('create-task-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target as HTMLFormElement);
+      const data = Object.fromEntries(fd.entries());
+      
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        alert('Failed to create task');
+      }
+    });
+
+    document.querySelectorAll('.update-status-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = (e.target as HTMLButtonElement).getAttribute('data-id');
+        const status = (e.target as HTMLButtonElement).getAttribute('data-status');
+        
+        const res = await fetch(`/api/tasks/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status }),
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (res.ok) {
+          window.location.reload();
+        }
+      });
+    });
+  </script>
+</Layout>
