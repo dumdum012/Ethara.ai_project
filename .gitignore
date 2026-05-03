@@ -16,9 +16,7 @@ pnpm-debug.log*
 # environment variables
 .env
 .env.production
-dev.db
-test-login.js
-test-logout.js
+*.db
 
 # macOS-specific files
 .DS_Store
