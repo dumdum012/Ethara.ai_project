@@ -5,7 +5,7 @@ import { signToken } from '../../../lib/auth';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    const { name, email, password } = await request.json();
+    const { name, email, password, role } = await request.json();
     
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -14,12 +14,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
     
-    // First user is ADMIN, others are MEMBER
-    const count = await prisma.user.count();
-    const role = count === 0 ? 'ADMIN' : 'MEMBER';
+    const validRole = role === 'ADMIN' ? 'ADMIN' : 'MEMBER';
 
     const user = await prisma.user.create({
-      data: { name, email, passwordHash, role }
+      data: { name, email, passwordHash, role: validRole }
     });
 
     const token = signToken({ id: user.id, role: user.role });
@@ -33,6 +31,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     return new Response(JSON.stringify({ user: { id: user.id, name: user.name, email: user.email, role: user.role } }), { status: 200 });
   } catch (error) {
-    return new Response(JSON.stringify({ error: 'Registration failed' }), { status: 500 });
+    console.error('Registration Error:', error);
+    return new Response(JSON.stringify({ error: 'Registration failed', details: String(error) }), { status: 500 });
   }
 }

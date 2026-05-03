@@ -29,6 +29,11 @@ if (Astro.locals.user) {
           <input type="text" name="name" class="brut-input" placeholder="FULL NAME" required />
           <input type="email" name="email" class="brut-input" placeholder="EMAIL" required />
           <input type="password" name="password" class="brut-input" placeholder="PASSWORD" required />
+          <select name="role" class="brut-input" required>
+            <option value="" disabled selected>SELECT ROLE</option>
+            <option value="MEMBER">MEMBER</option>
+            <option value="ADMIN">ADMIN</option>
+          </select>
           <button type="submit" class="brut-btn secondary" style="width: 100%">JOIN_TEAM</button>
         </form>
         <div id="register-error" style="color: red; margin-top: 1rem; font-weight: bold;"></div>

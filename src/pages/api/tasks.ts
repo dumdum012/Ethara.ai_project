@@ -9,16 +9,11 @@ export const GET: APIRoute = async ({ locals }) => {
   try {
     let tasks;
     if (locals.user.role === 'ADMIN') {
-      tasks = await prisma.task.findMany({ include: { project: true, assignee: true } });
+      tasks = await prisma.task.findMany({ include: { assignee: true } });
     } else {
       tasks = await prisma.task.findMany({
-        where: {
-          OR: [
-            { assigneeId: locals.user.id },
-            { project: { members: { some: { userId: locals.user.id } } } }
-          ]
-        },
-        include: { project: true, assignee: true }
+        where: { assigneeId: locals.user.id },
+        include: { assignee: true }
       });
     }
 
@@ -29,19 +24,18 @@ export const GET: APIRoute = async ({ locals }) => {
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  if (!locals.user) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+  if (!locals.user || locals.user.role !== 'ADMIN') {
+    return new Response(JSON.stringify({ error: 'Forbidden: Only Admins can create tasks' }), { status: 403 });
   }
 
   try {
-    const { title, description, dueDate, projectId, assigneeId } = await request.json();
+    const { title, description, dueDate, assigneeId } = await request.json();
 
     const task = await prisma.task.create({
       data: {
         title,
         description,
         dueDate: dueDate ? new Date(dueDate) : null,
-        projectId,
         assigneeId
       }
     });
