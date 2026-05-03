@@ -6,10 +6,12 @@ A full-stack, role-based project and task management web application. Built with
 
 - **Authentication & Authorization**: Secure JWT-based authentication. 
 - **Role-Based Access**: 
-  - **ADMIN**: The first user to register automatically becomes an Admin. Admins can create projects and assign members.
-  - **MEMBER**: Subsequent users are Members. They can view projects they are assigned to and manage their tasks.
-- **Project Management**: Group tasks into specific projects.
+  - **ADMIN**: Managers who can create, assign, and delete tasks.
+  - **MEMBER**: Team members who can view their assigned tasks and update their status.
+  - **Role Selection**: Users explicitly choose their role during registration.
 - **Task Tracking**: Create, assign, and track the status of tasks (`PENDING`, `IN_PROGRESS`, `COMPLETED`).
+- **Strict Permissions**: Only `ADMIN`s can create or delete tasks. Only the specifically assigned `MEMBER` can update a task's status.
+- **Time Management**: Task cards automatically calculate and display the remaining time until the due date (e.g., "5 DAYS LEFT" or "DUE TODAY").
 - **Brutalist UI**: A beautiful, tasteful brutalist design utilizing bold typography, high-contrast colors, and distinct borders.
 
 ## 🛠️ Technology Stack
@@ -37,9 +39,8 @@ The project uses a local SQLite database (`dev.db`). Generate the Prisma client 
 
 ```bash
 npx prisma generate
-npx prisma migrate dev
+npx prisma db push
 ```
-*Note: If you are prompted for a migration name during `migrate dev`, you can name it `init`.*
 
 ### 4. Start the Development Server
 Run the local Astro development server:
@@ -51,9 +52,9 @@ The application will be available at: **http://localhost:4321**
 
 ### 5. First Steps
 1. Navigate to `http://localhost:4321`
-2. **Register a new account**. Since this is the first account, it will automatically be granted **ADMIN** privileges.
-3. Once logged in, click **MANAGE_PROJECTS** to create your first project.
-4. Register a second account in another browser window to see the **MEMBER** perspective.
+2. **Register a new account**. Make sure to select **ADMIN** from the role dropdown to get manager privileges.
+3. Once logged in, you can start creating tasks and assigning them.
+4. Register a second account and select **MEMBER** to see the team member perspective and perform tasks.
 
 ## 🚂 Deployment (Railway)
 
@@ -72,11 +73,10 @@ This application is ready to be deployed on [Railway](https://railway.app/). Sin
    - Add `JWT_SECRET` with a secure random string (e.g., `your-super-secret-key`).
 5. **Configure Build & Start Commands**:
    - In the **Settings** tab, scroll down to **Build & Start**.
-   - Set the **Start Command** to run database migrations before starting the server:
+   - Set the **Start Command** to sync the database schema before starting the server:
      ```bash
      npx prisma db push && node ./dist/server/entry.mjs
      ```
-     *(Note: `db push` is used here instead of `migrate deploy` for simplicity with SQLite, but both work).*
 6. **Generate Domain**:
    - In the **Settings** tab under **Networking**, click **Generate Domain** to get your public URL.
 
