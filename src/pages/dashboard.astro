@@ -98,8 +98,13 @@ function getRemainingTime(dueDate: Date | null, status: string) {
 
   <script>
     document.getElementById('logout-btn')?.addEventListener('click', async () => {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      window.location.href = '/';
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+      } catch (e) {
+        console.error('Logout error:', e);
+      } finally {
+        window.location.href = '/';
+      }
     });
 
     document.getElementById('create-task-form')?.addEventListener('submit', async (e) => {
